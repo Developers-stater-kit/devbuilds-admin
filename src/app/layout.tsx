@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminSidebar } from "./sidebar";
+import { AdminHeader } from "@/components/header";
+import AppProvider from "./Provider";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,8 +33,25 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SidebarProvider>
+          <AdminSidebar />
+          <main className="flex flex-col flex-1 w-full">
+            <AppProvider>
+              <div className="flex items-center gap-2 h-14 px-4 border-b bg-background">
+                <SidebarTrigger />
+                <div className="flex-1" />
+                <AdminHeader />
+              </div>
+              <div className="flex-1 p-6">
+                {children}
+              </div>
+            </AppProvider>
+          </main>
+        </SidebarProvider>
+      </body>
     </html>
   );
 }
