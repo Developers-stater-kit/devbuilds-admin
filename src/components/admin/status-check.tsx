@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type BackendState = "checking" | "healthy" | "down";
 
 const BACKEND_URL =
-  process.env.BACKEND_URL || "http://localhost:4000";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
 export function BackendStatus() {
   const [status, setStatus] = useState<BackendState>("checking");
