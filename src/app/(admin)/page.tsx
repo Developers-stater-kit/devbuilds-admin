@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchBackend } from "@/lib/api";
 import { ArrowRight, Component, FileCode, Layers } from "lucide-react";
-import Link from "next/link";
 
 async function getStats() {
   try {

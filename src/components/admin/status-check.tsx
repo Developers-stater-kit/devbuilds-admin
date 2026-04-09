@@ -18,7 +18,7 @@ export function BackendStatus() {
       setLoading(true);
       setStatus("checking");
 
-      const res = await fetch(`${BACKEND_URL}/`, {
+      const res = await fetch(`${BACKEND_URL}/healthcheck`, {
         method: "GET",
         cache: "no-store",
       });

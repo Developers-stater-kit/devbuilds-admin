@@ -5,6 +5,7 @@ import { NavMain } from "@/components/nav-main";
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarHeader,
 } from "@/components/ui/sidebar";
 import {
@@ -14,6 +15,9 @@ import {
     Link2,
     LayoutTemplate,
 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
+import { NavUser, NavUserSkeleton } from "@/components/nav-user";
 
 export const adminNav = [
     {
@@ -44,6 +48,15 @@ export const adminNav = [
 ];
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const session = authClient.useSession();
+    if (!session) {
+        redirect("/login");
+    }
+    const user = {
+        name: session.data?.user?.name as string,
+        email: session.data?.user?.email as string,
+        image: session.data?.user?.image as string,
+    };
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
@@ -56,6 +69,13 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
             <SidebarContent>
                 <NavMain items={adminNav} itemsCategory="Admin" />
             </SidebarContent>
+            <SidebarFooter>
+                {session.isPending ? (
+                    <NavUserSkeleton />
+                ) : (
+                    <NavUser user={user} />
+                )}
+            </SidebarFooter>
         </Sidebar>
     );
 }
