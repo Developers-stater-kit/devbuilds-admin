@@ -8,6 +8,9 @@ export const authClient = createAuthClient({
     plugins: [
         adminClient(),
     ],
+    fetchOptions: {
+        credentials: "include", // IMPORTANT → send cookies across subdomains
+    },
 })
 
 export const {
@@ -19,12 +22,12 @@ export const {
 
 export async function GetAdmin() {
     try {
-        const session = await authClient.useSession();
+        const session = await authClient.getSession();
 
         if (session?.data?.user.role === "ADMIN") {
             return { isAdmin: true, user: session.data.user };
         }
-        
+
         return { isAdmin: false, user: null };
     } catch (error) {
         return { isAdmin: false, user: null };
