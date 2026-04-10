@@ -14,16 +14,13 @@ export const {
     signIn,
     signOut,
     useSession,
-    getSession
 } = authClient;
 
 
 export async function GetAdmin() {
     try {
-        // Use getSession (async), NOT useSession (hook)
-        const session = await authClient.getSession();
+        const session = await authClient.useSession();
 
-        // FIX: Return TRUE if they are an Admin
         if (session?.data?.user.role === "ADMIN") {
             return { isAdmin: true, user: session.data.user };
         }

@@ -49,13 +49,11 @@ export const adminNav = [
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const session = authClient.useSession();
-    if (!session) {
-        redirect("/login");
-    }
+    
     const user = {
-        name: session.data?.user?.name as string,
-        email: session.data?.user?.email as string,
-        image: session.data?.user?.image as string,
+        name: session.data?.user?.name || "User",
+        email: session.data?.user?.email || "[EMAIL_ADDRESS]",
+        image: session.data?.user?.image || "",
     };
     return (
         <Sidebar collapsible="icon" {...props}>

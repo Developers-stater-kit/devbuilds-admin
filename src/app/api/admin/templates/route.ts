@@ -2,12 +2,8 @@ import { NextResponse } from "next/server";
 import { fetchBackend } from "@/lib/api";
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    
+  try {    
     const data = await fetchBackend(`/api/templates`);
-
-    console.log(data)
     
     return NextResponse.json(data);
   } catch (error: any) {

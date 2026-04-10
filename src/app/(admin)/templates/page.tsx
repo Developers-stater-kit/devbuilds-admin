@@ -5,7 +5,6 @@ import { TemplatesTable } from "@/components/admin/templates/templates-table";
 export default async function TemplatesPage() {
   try {
     const response = await fetchBackend("/api/templates");
-    console.log(response)
     const templatesArray = Array.isArray(response) ? response : response?.data || [];
 
     return (

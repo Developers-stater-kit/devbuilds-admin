@@ -1,24 +1,59 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchBackend } from "@/lib/api";
-import { ArrowRight, Component, FileCode, Layers } from "lucide-react";
+"use client";
 
-async function getStats() {
-  try {
-    // Calling the proxy route you just created
-    const res = await fetchBackend("/api/admin/stats");
-    return {
-      frameworksCount: res?.data?.frameworks || 0,
-      featuresCount: res?.data?.features || 0,
-      templatesCount: res?.data?.templates || 0,
-    };
-  } catch (error) {
-    return { frameworksCount: 0, featuresCount: 0, templatesCount: 0 };
-  }
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSession } from "@/lib/auth-client";
+import { Component, FileCode, Layers, Loader2 } from "lucide-react";
+
+interface Stats {
+  frameworksCount: number;
+  featuresCount: number;
+  templatesCount: number;
 }
 
-export default async function AdminDashboardPage() {
-  const stats = await getStats();
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<Stats>({
+    frameworksCount: 0,
+    featuresCount: 0,
+    templatesCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const { isPending } = useSession();
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchStats() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/admin/stats");
+        const res = await response.json();
+
+        if (isMounted) {
+          setStats({
+            frameworksCount: res?.data?.frameworks || 0,
+            featuresCount: res?.data?.features || 0,
+            templatesCount: res?.data?.templates || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchStats();
+    return () => { isMounted = false; };
+  }, []);
+
+  if (isPending || (loading && stats.frameworksCount === 0)) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -68,4 +103,4 @@ export default async function AdminDashboardPage() {
       </div>
     </div>
   );
-}
+}
