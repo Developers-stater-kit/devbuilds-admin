@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1775672805198,
+      "tag": "0000_optimal_morgan_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775745331010,
+      "tag": "0001_wooden_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775745598646,
+      "tag": "0002_mature_thaddeus_ross",
+      "breakpoints": true
+    }
+  ]
+}

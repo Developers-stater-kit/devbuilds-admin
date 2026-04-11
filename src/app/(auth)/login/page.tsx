@@ -14,7 +14,8 @@ export default function LoginPage() {
     setIsLoading(true);
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+      newUserCallbackURL: '/check',
+      callbackURL: `/check`,
     });
   };
 

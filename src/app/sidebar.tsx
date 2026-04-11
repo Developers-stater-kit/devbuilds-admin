@@ -15,7 +15,7 @@ import {
     Link2,
     LayoutTemplate,
 } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
+import { authClient, useSession } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 import { NavUser, NavUserSkeleton } from "@/components/nav-user";
 
@@ -48,12 +48,12 @@ export const adminNav = [
 ];
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const session = authClient.useSession();
+    const { data: session, isPending } = useSession();
     
     const user = {
-        name: session.data?.user?.name || "User",
-        email: session.data?.user?.email || "[EMAIL_ADDRESS]",
-        image: session.data?.user?.image || "",
+        name: session?.user?.name!,
+        email: session?.user?.email!,
+        image: session?.user?.image!,
     };
     return (
         <Sidebar collapsible="icon" {...props}>
@@ -68,7 +68,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
                 <NavMain items={adminNav} itemsCategory="Admin" />
             </SidebarContent>
             <SidebarFooter>
-                {session.isPending ? (
+                {isPending ? (
                     <NavUserSkeleton />
                 ) : (
                     <NavUser user={user} />
