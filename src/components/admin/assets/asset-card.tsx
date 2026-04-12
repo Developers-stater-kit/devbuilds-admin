@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Copy, Trash2, ExternalLink, Check } from "lucide-react";
+import { Copy, ExternalLink, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -35,13 +35,14 @@ export function AssetCard({ name, publicUrl, path, onDelete }: AssetCardProps) {
     setIsDeleting(true);
     try {
       await onDelete(path);
-      // Toast success is handled in page.tsx or here
+      // Success toast is usually handled in the parent page.tsx
     } catch (error) {
       toast.error("Delete failed");
     } finally {
       setIsDeleting(false);
     }
   };
+
   return (
     <Card className="overflow-hidden group border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-all duration-300 flex flex-col h-full">
       {/* Image Preview Section */}
@@ -53,7 +54,6 @@ export function AssetCard({ name, publicUrl, path, onDelete }: AssetCardProps) {
           className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 768px) 100vw, 33vw"
         />
-        {/* Overlay Actions */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <TooltipProvider>
             <Tooltip>
@@ -80,14 +80,12 @@ export function AssetCard({ name, publicUrl, path, onDelete }: AssetCardProps) {
         </p>
 
         <div className="flex items-center gap-2 w-full">
-          {/* URL Display - Improved truncation handling */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center px-2 py-1.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-500 w-full">
               <span className="truncate block">{publicUrl}</span>
             </div>
           </div>
 
-          {/* Action Buttons - Flex-shrink-0 ensures they never disappear */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <TooltipProvider>
               <Tooltip>
@@ -107,6 +105,7 @@ export function AssetCard({ name, publicUrl, path, onDelete }: AssetCardProps) {
 
             <TooltipProvider>
               <Tooltip>
+                {/* DeleteAssetDialog acts as the Trigger */}
                 <DeleteAssetDialog
                   name={name}
                   onConfirm={handleDelete}

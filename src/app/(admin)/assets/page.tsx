@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AssetCard } from "@/components/admin/assets/asset-card";
 import { UploadButton } from "@/components/admin/assets/upload-button";
-import { listAssets, deleteImage } from "@/lib/upload-assets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { deleteAssetAction, listAssetsAction } from "@/app/actions/assets";
 
 interface Asset {
   name: string;
@@ -19,7 +19,7 @@ export default function AssetsPage() {
 
   const fetchAssets = useCallback(async () => {
     setIsLoading(true);
-    const { assets, error } = await listAssets();
+    const { assets, error } = await listAssetsAction();
 
     if (error) {
       toast.error(`Failed to load assets: ${error}`);
@@ -35,20 +35,16 @@ export default function AssetsPage() {
   }, [fetchAssets]);
 
   const handleDelete = async (path: string) => {
-    try {
-      const { error } = await deleteImage(path);
-      if (error) throw new Error(error);
+    const res = await deleteAssetAction(path);
+    if (!res.success) throw new Error(res.error);
 
-      setAssets((prev) => prev.filter((asset) => asset.path !== path));
-      toast.success("Asset deleted");
-    } catch (err: any) {
-      toast.error(err.message || "Delete failed");
-    }
+    setAssets((prev) => prev.filter((asset) => asset.path !== path));
+    toast.success("Asset deleted");
   };
 
   return (
     <div className="p-6 md:p-8 space-y-8 min-h-screen bg-background">
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -65,10 +61,10 @@ export default function AssetsPage() {
 
       {/* Content */}
       <div className="rounded-2xl border bg-card p-4 md:p-6">
-        
+
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          
+
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="space-y-3">

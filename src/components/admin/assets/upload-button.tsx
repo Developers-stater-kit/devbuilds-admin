@@ -4,7 +4,8 @@ import React, { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { uploadImage } from "@/lib/upload-assets";
+// 1. Import the Server Action instead of the client utility
+import { uploadAssetAction } from "@/app/actions/assets"; 
 import { UploadAssetDialog } from "./asset-dialog";
 
 interface UploadButtonProps {
@@ -31,13 +32,15 @@ export function UploadButton({ onUploadSuccess }: UploadButtonProps) {
     const uploadToast = toast.loading("Uploading image...");
 
     try {
-      const { error } = await uploadImage({ 
-        file: selectedFile,
-        customName: newName
-      });
+      // 2. Prepare FormData because Server Actions require it for File transfers
+      const formData = new FormData();
+      formData.append("file", selectedFile);
 
-      if (error) {
-        toast.error(`Upload failed: ${error}`, { id: uploadToast });
+      // 3. Call the Server Action
+      const res = await uploadAssetAction(formData, newName);
+
+      if (!res.success) {
+        toast.error(`Upload failed: ${res.error}`, { id: uploadToast });
       } else {
         toast.success("Image uploaded successfully!", { id: uploadToast });
         setIsDialogOpen(false);
