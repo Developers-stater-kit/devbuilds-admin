@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { fetchBackend } from "@/lib/api";
 import { getAllFrameworks } from "@/app/(admin)/frameworks/action";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const data = await getAllFrameworks();
-
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("Frameworks GET Error:", error);

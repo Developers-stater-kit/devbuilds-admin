@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
-import { fetchBackend } from "@/lib/api";
+import { type NextRequest, NextResponse } from "next/server";
 import { getFeatureById } from "@/app/(admin)/features/action";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const data = await getFeatureById(id);

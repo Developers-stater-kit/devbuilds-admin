@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { fetchBackend } from "@/lib/api";
 import { getAllTemplates } from "@/app/(admin)/templates/action";
 
 export async function GET() {
