@@ -14,6 +14,7 @@ import {
     Puzzle,
     Link2,
     LayoutTemplate,
+    Image,
 } from "lucide-react";
 import { authClient, useSession } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
@@ -47,6 +48,14 @@ export const adminNav = [
     },
 ];
 
+export const utilities =[
+    {
+        title: "Assets",
+        url: "/assets",
+        icon: Image,
+    },
+]
+
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: session, isPending } = useSession();
     
@@ -68,6 +77,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
                 <NavMain items={adminNav} itemsCategory="Admin" />
             </SidebarContent>
             <SidebarFooter>
+                <NavMain items={utilities} />
                 {isPending ? (
                     <NavUserSkeleton />
                 ) : (
