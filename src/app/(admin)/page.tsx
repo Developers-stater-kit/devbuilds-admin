@@ -1,24 +1,21 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchBackend } from "@/lib/api";
-import { ArrowRight, Component, FileCode, Layers } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Component, FileCode, Layers } from "lucide-react";
+import { getAllStats } from "./action";
 
-async function getStats() {
-  try {
-    // Calling the proxy route you just created
-    const res = await fetchBackend("/api/admin/stats");
-    return {
-      frameworksCount: res?.data?.frameworks || 0,
-      featuresCount: res?.data?.features || 0,
-      templatesCount: res?.data?.templates || 0,
-    };
-  } catch (error) {
-    return { frameworksCount: 0, featuresCount: 0, templatesCount: 0 };
-  }
-}
 
 export default async function AdminDashboardPage() {
-  const stats = await getStats();
+  const res = await getAllStats();
+
+  if (!res.success) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        </div>
+        <p className="text-red-500">{res.mssg}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -33,7 +30,7 @@ export default async function AdminDashboardPage() {
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.frameworksCount}</div>
+            <div className="text-2xl font-bold">{res.data.frameworks}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Active architectures and environments
             </p>
@@ -46,7 +43,7 @@ export default async function AdminDashboardPage() {
             <Component className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.featuresCount}</div>
+            <div className="text-2xl font-bold">{res.data.features}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Available integrations and tools
             </p>
@@ -59,7 +56,7 @@ export default async function AdminDashboardPage() {
             <FileCode className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.templatesCount}</div>
+            <div className="text-2xl font-bold">{res.data.templates}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Pre-configured starter kits
             </p>

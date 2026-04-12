@@ -7,6 +7,8 @@ import { Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ViewMode, EntityBase } from "./types";
 import { cn } from "@/lib/utils";
+import { getAllFrameworks } from "../../frameworks/action";
+import { getAllFeatures } from "../../features/action";
 
 interface SidebarListProps {
   viewMode: ViewMode;
@@ -32,10 +34,16 @@ export default function SidebarList({
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/admin/${viewMode}`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const json = await res.json();
-        const items = Array.isArray(json) ? json : json?.data || [];
+        let res;
+        if (viewMode === "frameworks") {
+          res = await getAllFrameworks();
+        } else {
+          res = await getAllFeatures();
+        }
+
+        if (!res.success) throw new Error(res.error || "Failed to fetch");
+        
+        const items = res.data || [];
         // Filter to only show ACTIVE entities
         const activeItems = items.filter((item: EntityBase) => item.status === "ACTIVE");
         if (active) setData(activeItems);
@@ -46,7 +54,9 @@ export default function SidebarList({
       }
     }
     loadList();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [viewMode]);
 
   // Client-side search filtering

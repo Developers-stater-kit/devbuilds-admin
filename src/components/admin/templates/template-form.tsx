@@ -22,7 +22,10 @@ import {
     Star,
     DollarSign,
 } from "lucide-react";
-import { Template } from "@/types/admin";
+import { templates } from "@/db/schema/templates/templates";
+import { createTemplate, updateTemplate } from "@/app/(admin)/templates/action";
+
+export type Template = typeof templates.$inferSelect;
 
 // ─── SCHEMA ───────────────────────────────────────────────────────────────────
 
@@ -123,33 +126,35 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
     const isFeatured = watch("isFeatured");
 
     const onSubmit = async (values: TemplateFormValues) => {
-        // This matches the folder structure in your image: api/admin/templates/[id]
-        const url = initialData?.id
-            ? `/api/admin/templates/${initialData.id}`
-            : `/api/admin/templates`;
+        // Define the server action execution
+        const actionCall = async () => {
+            let res;
 
-        const method = initialData?.id ? "PUT" : "POST";
+            if (initialData?.id) {
+                // Update existing template
+                res = await updateTemplate(initialData.id, values);
+            } else {
+                // Create new template (matching your 'data' wrapper pattern)
+                res = await createTemplate({ data: values });
+            }
 
-        const savePromise = fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(values),
-        }).then(async (res) => {
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.error || "Failed to save");
-            return result;
-        });
+            if (!res.success) {
+                throw new Error(res.mssg || "An error occurred while saving.");
+            }
 
-        toast.promise(savePromise, {
-            loading: "Saving...",
+            return res;
+        };
+
+        // Use toast to handle the loading, success, and error states
+        toast.promise(actionCall(), {
+            loading: `${initialData ? "Updating" : "Creating"} template...`,
             success: () => {
                 onSuccess();
-                return "Saved successfully";
+                return `Template ${initialData ? "updated" : "created"} successfully`;
             },
             error: (err) => err.message,
         });
     };
-
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
 

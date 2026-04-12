@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,8 +26,15 @@ import {
   GitFork,
   FileText,
 } from "lucide-react";
+import { frameworks } from "@/db/schema/resources";
+import { createFramework, updateFramework } from "@/app/(admin)/frameworks/action";
 
-// ─── SCHEMA ───────────────────────────────────────────────────────────────────
+// ─── TYPES & SCHEMAS ──────────────────────────────────────────────────────────
+
+export type Framework = typeof frameworks.$inferSelect;
+
+const SCOPES = ["FRONTEND", "BACKEND", "FULLSTACK"] as const;
+type ScopeType = (typeof SCOPES)[number];
 
 const frameworkSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -38,16 +46,12 @@ const frameworkSchema = z.object({
       "Key can only contain lowercase letters, numbers, and hyphens"
     ),
   repoName: z.string().min(1, "Repository name is required"),
-  scope: z.array(z.string()).min(1, "At least one scope is required"),
+  scope: z.array(z.enum(SCOPES)).min(1, "At least one scope is required"),
   status: z.enum(["ACTIVE", "INACTIVE", "DEPRECATED", "PENDING"]),
   isExperimental: z.boolean(),
 });
 
-import { Framework } from "@/types/admin";
-
 type FrameworkFormValues = z.infer<typeof frameworkSchema>;
-
-// ─── TYPES ────────────────────────────────────────────────────────────────────
 
 type FrameworkFormProps = {
   initialData?: Framework | null;
@@ -98,8 +102,6 @@ function FormField({
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
-const SCOPES = ["FRONTEND", "BACKEND", "FULLSTACK"];
-
 export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFormProps) {
   const form = useForm<FrameworkFormValues>({
     resolver: zodResolver(frameworkSchema),
@@ -107,8 +109,8 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
       name: initialData?.name || "",
       uniqueKey: initialData?.uniqueKey || "",
       repoName: initialData?.repoName || "",
-      scope: initialData?.scope || [],
-      status: initialData?.status || "PENDING",
+      scope: (initialData?.scope as ScopeType[]) || [],
+      status: (initialData?.status as FrameworkFormValues["status"]) || "PENDING",
       isExperimental: initialData?.isExperimental || false,
     },
   });
@@ -121,36 +123,35 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
     formState: { errors, isSubmitting },
   } = form;
 
-  const scopeValue = watch("scope");
+  const scopeValue = watch("scope") || [];
   const isExperimental = watch("isExperimental");
 
-  const handleScopeToggle = (scope: string) => {
-    const current = scopeValue || [];
-    const exists = current.includes(scope);
+  const handleScopeToggle = (s: ScopeType) => {
+    const current = [...scopeValue];
+    const exists = current.includes(s);
     setValue(
       "scope",
-      exists ? current.filter((s) => s !== scope) : [...current, scope],
+      exists ? current.filter((val) => val !== s) : [...current, s],
       { shouldValidate: true }
     );
   };
 
   const onSubmit = async (values: FrameworkFormValues) => {
-    const url = initialData?.id
-      ? `/api/admin/frameworks/${initialData.id}`
-      : `/api/admin/frameworks`;
-    const method = initialData?.id ? "PUT" : "POST";
+    const actionCall = async () => {
+      let res;
+      if (initialData?.id) {
+        res = await updateFramework(initialData.id, values);
+      } else {
+        res = await createFramework({ data: values });
+      }
 
-    const savePromise = fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    }).then(async (res) => {
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.mssg || result.error || "Failed to save framework");
-      return result;
-    });
+      if (!res.success) {
+        throw new Error(res.mssg || "An error occurred while saving.");
+      }
+      return res;
+    };
 
-    toast.promise(savePromise, {
+    toast.promise(actionCall(), {
       loading: `${initialData ? "Updating" : "Creating"} framework...`,
       success: () => {
         onSuccess();
@@ -162,10 +163,7 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
-
-      {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto space-y-8 px-6 py-6">
-
         {/* Basic Info */}
         <FormSection title="Basic Info">
           <Controller
@@ -240,21 +238,19 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
                 <div
                   key={scope}
                   className="flex items-center gap-3 rounded-lg border px-4 py-3 hover:bg-accent/50 transition-colors"
-                // REMOVED onClick from here to prevent loops
                 >
                   <Checkbox
                     id={`scope-${scope}`}
-                    checked={scopeValue?.includes(scope)}
-                    onCheckedChange={() => handleScopeToggle(scope)} // Handle toggle here
+                    checked={scopeValue.includes(scope)}
+                    onCheckedChange={() => handleScopeToggle(scope)}
                   />
                   <Label
                     htmlFor={`scope-${scope}`}
                     className="flex-1 cursor-pointer font-medium text-sm py-1"
-                  // No stopPropagation needed now
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>{scope}</span>
-                      {scopeValue?.includes(scope) && (
+                      {scopeValue.includes(scope) && (
                         <Badge variant="secondary" className="text-[10px]">Selected</Badge>
                       )}
                     </div>
@@ -301,10 +297,9 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
             )}
           />
         </FormSection>
-
       </div>
 
-      {/* ── Sticky footer ── */}
+      {/* Sticky footer */}
       <div className="border-t px-6 py-4 flex items-center justify-end gap-2 bg-background">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
@@ -314,7 +309,6 @@ export function FrameworkForm({ initialData, onSuccess, onCancel }: FrameworkFor
           {isSubmitting ? "Saving..." : initialData ? "Update Framework" : "Create Framework"}
         </Button>
       </div>
-
     </form>
   );
 }

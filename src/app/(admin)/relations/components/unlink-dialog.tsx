@@ -7,6 +7,8 @@ import { EntityBase, ViewMode } from "./types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner"; // Using sonner for toasts as specified in package.json
+import { useTransition } from "react";
+import { unlinkFeatureFromFramework } from "../action";
 
 interface UnlinkDialogProps {
   open: boolean;
@@ -25,7 +27,7 @@ export default function UnlinkDialog({
   viewMode,
   onSuccess
 }: UnlinkDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   if (!sourceEntity || !targetEntity) return null;
 
@@ -37,25 +39,21 @@ export default function UnlinkDialog({
   const featureName = viewMode === "features" ? sourceEntity.name : targetEntity.name;
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/link/${frameworkKey}/${featureKey}`, {
-        method: "DELETE",
-      });
+    startTransition(async () => {
+      try {
+        const res = await unlinkFeatureFromFramework(frameworkKey, featureKey);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Failed to remove relation");
+        if (!res.success) {
+          throw new Error(res.error || res.message || "Failed to remove relation");
+        }
+
+        toast.success(res.message || "Relation removed successfully");
+        onSuccess();
+        onOpenChange(false);
+      } catch (error: any) {
+        toast.error(error.message || "An error occurred while unlinking.");
       }
-
-      toast.success("Relation removed successfully");
-      onSuccess();
-      onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred while unlinking.");
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   return (
@@ -80,11 +78,11 @@ export default function UnlinkDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Deleting..." : "Delete"}
+          <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+            {isPending ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

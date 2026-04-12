@@ -45,10 +45,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Template } from "@/types/admin";
 import { TemplateForm } from "./template-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { templates } from "@/db/schema/templates/templates";
+import { deleteTemplate } from "@/app/(admin)/templates/action";
+
+export type Template = typeof templates.$inferSelect;
 
 export function TemplatesTable({ initialData = [] }: { initialData: Template[] }) {
   const router = useRouter();
@@ -79,13 +82,10 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
     if (!templateToDelete?.id) return;
 
     try {
-      const res = await fetch(`/api/admin/templates/${templateToDelete.id}`, {
-        method: "DELETE",
-      });
+      const res = await deleteTemplate(templateToDelete.id);
 
-      if (!res.ok) {
-        const result = await res.json().catch(() => ({}));
-        throw new Error(result.mssg || result.error || "Failed to delete template.");
+      if (!res.success) {
+        throw new Error(res.mssg || "Failed to delete template.");
       }
 
       toast.success("Template deleted successfully");

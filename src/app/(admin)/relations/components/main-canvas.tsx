@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ViewMode, EntityBase } from "./types";
 import LinkDialog from "./link-dialog";
 import UnlinkDialog from "./unlink-dialog";
+import { getFeaturesForFramework, getFrameworksForFeature } from "../action";
 
 
 interface MainCanvasProps {
@@ -33,18 +34,18 @@ export default function MainCanvas({ viewMode, selectedEntity }: MainCanvasProps
     setData([]);
 
     try {
-      const endpoint = viewMode === "frameworks"
-        ? `/api/admin/link/frameworks/${selectedEntity.uniqueKey}/features`
-        : `/api/admin/link/features/${selectedEntity.uniqueKey}/frameworks`;
+      let res;
+      if (viewMode === "frameworks") {
+        res = await getFeaturesForFramework(selectedEntity.uniqueKey);
+      } else {
+        res = await getFrameworksForFeature(selectedEntity.uniqueKey);
+      }
 
-      const res = await fetch(endpoint);
-      if (!res.ok) throw new Error("Failed to fetch relations");
-      const json = await res.json();
-
-      const items = Array.isArray(json) ? json : json?.data || [];
-      setData(items);
+      if (!res.success) throw new Error(res.error || "Failed to fetch relations");
+      
+      setData(res.data || []);
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      setError(err.error || err.message || "An error occurred");
     } finally {
       setIsLoading(false);
     }

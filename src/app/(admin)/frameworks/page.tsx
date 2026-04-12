@@ -1,13 +1,16 @@
-import { fetchBackend } from "@/lib/api";
 import { FrameworksTable } from "@/components/admin/frameworks/frameworks-table";
+import { getAllFrameworks } from "./action";
 
 
 export default async function FrameworksPage() {
   try {
-    const response = await fetchBackend("/api/admin/frameworks");
+    const response = await getAllFrameworks();
 
-    // Extract the array depending on the API response shape
-    const frameworksArray = Array.isArray(response) ? response : response?.data || [];
+    if (!response.success) {
+      throw new Error(response.error || "Failed to fetch frameworks");
+    }
+
+    const frameworksArray = response.data ?? [];
 
     return (
       <div className="flex flex-col gap-6">

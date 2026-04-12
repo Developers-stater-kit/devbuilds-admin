@@ -45,10 +45,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Framework } from "@/types/admin";
 import { FrameworkForm } from "./frameworks-from";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { frameworks } from "@/db/schema/resources";
+import { deleteFramework } from "@/app/(admin)/frameworks/action";
+
+export type Framework = typeof frameworks.$inferSelect;
+
 
 export function FrameworksTable({ initialData = [] }: { initialData: Framework[] }) {
   const router = useRouter();
@@ -79,13 +83,10 @@ export function FrameworksTable({ initialData = [] }: { initialData: Framework[]
     if (!frameworkToDelete?.id) return;
 
     try {
-      const res = await fetch(`/api/admin/frameworks/${frameworkToDelete.id}`, {
-        method: "DELETE",
-      });
+      const res = await deleteFramework(frameworkToDelete.id);
 
-      if (!res.ok) {
-        const result = await res.json().catch(() => ({}));
-        throw new Error(result.mssg || result.error || "Failed to delete framework.");
+      if (!res.success) {
+        throw new Error(res.mssg || "Failed to delete framework.");
       }
 
       toast.success("Framework deleted successfully");

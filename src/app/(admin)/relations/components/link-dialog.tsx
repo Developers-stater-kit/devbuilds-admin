@@ -10,6 +10,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTransition } from "react";
+import { getAllFrameworks } from "../../frameworks/action";
+import { getAllFeatures } from "../../features/action";
+import { linkFeatureToFramework } from "../action";
 
 interface LinkDialogProps {
   open: boolean;
@@ -26,7 +30,7 @@ export default function LinkDialog({
   viewMode,
   onSuccess
 }: LinkDialogProps) {
-  const [isLinking, setIsLinking] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [frameworks, setFrameworks] = useState<EntityBase[]>([]);
   const [features, setFeatures] = useState<EntityBase[]>([]);
 
@@ -54,19 +58,17 @@ export default function LinkDialog({
       const fetchAll = async () => {
         try {
           const [fwRes, ftRes] = await Promise.all([
-            fetch("/api/admin/frameworks"),
-            fetch("/api/admin/features")
+            getAllFrameworks(),
+            getAllFeatures()
           ]);
 
-          if (fwRes.ok) {
-            const fwJson = await fwRes.json();
-            const rawFw = Array.isArray(fwJson) ? fwJson : fwJson.data || [];
+          if (fwRes.success) {
+            const rawFw = fwRes.data || [];
             // Only allow linking ACTIVE frameworks
             setFrameworks(rawFw.filter((f: EntityBase) => f.status === "ACTIVE"));
           }
-          if (ftRes.ok) {
-            const ftJson = await ftRes.json();
-            const rawFt = Array.isArray(ftJson) ? ftJson : ftJson.data || [];
+          if (ftRes.success) {
+            const rawFt = ftRes.data || [];
             // Only allow linking ACTIVE features
             setFeatures(rawFt.filter((f: EntityBase) => f.status === "ACTIVE"));
           }
@@ -85,25 +87,21 @@ export default function LinkDialog({
       return;
     }
 
-    setIsLinking(true);
-    try {
-      const res = await fetch(`/api/admin/link/${selectedFramework.uniqueKey}/${selectedFeature.uniqueKey}`, {
-        method: "POST",
-      });
+    startTransition(async () => {
+      try {
+        const res = await linkFeatureToFramework(selectedFramework.uniqueKey, selectedFeature.uniqueKey);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Failed to create relation");
+        if (!res.success) {
+          throw new Error(res.message || res.error || "Failed to create relation");
+        }
+
+        toast.success(res.message || "Relation linked successfully");
+        onSuccess();
+        onOpenChange(false);
+      } catch (error: any) {
+        toast.error(error.message || "An error occurred while linking.");
       }
-
-      toast.success("Relation linked successfully");
-      onSuccess();
-      onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred while linking.");
-    } finally {
-      setIsLinking(false);
-    }
+    });
   };
 
   return (
@@ -209,11 +207,11 @@ export default function LinkDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLinking}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleLink} disabled={!selectedFramework || !selectedFeature || isLinking}>
-            {isLinking ? "Linking..." : "Link Entities"}
+          <Button onClick={handleLink} disabled={!selectedFramework || !selectedFeature || isPending}>
+            {isPending ? "Linking..." : "Link Entities"}
           </Button>
         </DialogFooter>
       </DialogContent>

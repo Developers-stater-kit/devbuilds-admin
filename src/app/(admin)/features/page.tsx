@@ -1,10 +1,15 @@
-import { fetchBackend } from "@/lib/api";
 import { FeaturesTable } from "@/components/admin/features/features-table";
+import { getAllFeatures } from "./action";
 
 export default async function FeaturesPage() {
   try {
-    const response = await fetchBackend("/api/admin/features");
-    const featuresArray = Array.isArray(response) ? response : response?.data || [];
+    const response = await getAllFeatures();
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to fetch features");
+    }
+
+    const featuresArray = response.data ?? [];
 
     return (
       <div className="flex flex-col gap-6">

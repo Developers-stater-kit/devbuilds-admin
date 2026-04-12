@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { fetchBackend } from "@/lib/api";
+import { getAllFrameworks } from "@/app/(admin)/frameworks/action";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-
-    // fetchBackend already returns the parsed JSON data
-    const data = await fetchBackend(`/api/admin/frameworks?${searchParams.toString()}`);
+    const data = await getAllFrameworks();
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -18,23 +16,3 @@ export async function GET(request: Request) {
   }
 }
 
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    // fetchBackend already handles JSON.stringify(body) internally
-    const data = await fetchBackend("/api/admin/frameworks/create", {
-      method: "POST",
-      body: body,
-    });
-
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Frameworks POST Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
-  }
-}

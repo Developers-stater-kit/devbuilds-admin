@@ -3,16 +3,9 @@ import { db } from "@/db/drizzle";
 import { accounts, sessions, user, verificationTokens } from "@/db/schema/user";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-// import { admin } from "better-auth/plugins/admin";
 
 export const auth = betterAuth({
     appName: 'DevBuilds Admin',
-    // plugins: [
-    //     admin({
-    //         defaultRole: 'USER',
-    //         adminRoles: ['ADMIN'],
-    //     }),
-    // ],
     socialProviders: {
         google: {
             prompt: 'select_account consent',
@@ -38,7 +31,6 @@ export const auth = betterAuth({
     trustedOrigins: [
         'http://localhost:3000',
         "https://admin.devbuilds.in",
-        "https://backend.devbuilds.in",
         "https://devbuilds.in",
     ],
     // advanced: {

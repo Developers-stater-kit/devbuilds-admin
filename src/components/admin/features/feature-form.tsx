@@ -26,8 +26,11 @@ import {
   FlaskConical,
   Loader2,
 } from "lucide-react";
+import { features } from "@/db/schema/resources";
+import { createFeatures, updateFeature } from "@/app/(admin)/features/action";
 
-import { Feature } from "@/types/admin";
+export type Feature = typeof features.$inferSelect;
+
 
 const featureSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -118,22 +121,21 @@ export function FeatureForm({ initialData, onSuccess, onCancel }: FeatureFormPro
   const isExperimental = watch("isExperimental");
 
   const onSubmit = async (values: FeatureFormValues) => {
-    const url = initialData?.id
-      ? `/api/admin/features/${initialData.id}`
-      : `/api/admin/features`;
-    const method = initialData?.id ? "PUT" : "POST";
+    const actionCall = async () => {
+      let res;
+      if (initialData?.id) {
+        res = await updateFeature(initialData.id, values);
+      } else {
+        res = await createFeatures({ data: values });
+      }
 
-    const savePromise = fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    }).then(async (res) => {
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.mssg || result.error || "Failed to save feature");
-      return result;
-    });
+      if (!res.success) {
+        throw new Error(res.mssg || "An error occurred");
+      }
+      return res;
+    };
 
-    toast.promise(savePromise, {
+    toast.promise(actionCall(), {
       loading: `${initialData ? "Updating" : "Creating"} feature...`,
       success: () => {
         onSuccess();

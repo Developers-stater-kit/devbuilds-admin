@@ -1,35 +1,33 @@
 import { NextResponse } from "next/server";
 import { fetchBackend } from "@/lib/api";
+import { getAllTemplates } from "@/app/(admin)/templates/action";
 
-export async function GET(request: Request) {
-  try {    
-    const data = await fetchBackend(`/api/templates`);
-    
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Templates GET Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" }, 
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const body = await request.json();
-    
-    // Pass the body object directly; fetchBackend handles stringifying
-    const data = await fetchBackend("/api/templates/create", {
-      method: "POST",
-      body: body, 
-    });
-    
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Templates POST Error:", error);
+    const response = await getAllTemplates();
+
+    if (!response.success) {
+      return NextResponse.json(
+        { success: false, error: response.error },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" }, 
+      {
+        success: true,
+        data: response.data,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Templates API Error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Internal Server Error",
+      },
       { status: 500 }
     );
   }

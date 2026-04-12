@@ -45,10 +45,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Feature } from "@/types/admin";
 import { FeatureForm } from "./feature-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { features } from "@/db/schema/resources";
+import { deleteFeature } from "@/app/(admin)/features/action";
+
+export type Feature = typeof features.$inferSelect;
+
 
 export function FeaturesTable({ initialData = [] }: { initialData: Feature[] }) {
   const router = useRouter();
@@ -81,13 +85,10 @@ export function FeaturesTable({ initialData = [] }: { initialData: Feature[] }) 
     if (!featureToDelete?.id) return;
 
     try {
-      const res = await fetch(`/api/admin/features/${featureToDelete.id}`, {
-        method: "DELETE",
-      });
+      const res = await deleteFeature(featureToDelete.id);
 
-      if (!res.ok) {
-        const result = await res.json().catch(() => ({}));
-        throw new Error(result.mssg || result.error || "Failed to delete feature.");
+      if (!res.success) {
+        throw new Error(res.mssg || "Failed to delete feature.");
       }
 
       toast.success("Feature deleted successfully");
@@ -206,7 +207,7 @@ export function FeaturesTable({ initialData = [] }: { initialData: Feature[] }) 
                       {feature.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-sm text-muted-foreground font-mono text-xs max-w-[200px] truncate">
+                  <TableCell className="hidden md:table-cell text-muted-foreground font-mono text-xs max-w-[200px] truncate">
                     {feature.repoName}
                   </TableCell>
                   <TableCell>
