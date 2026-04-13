@@ -6,7 +6,7 @@ export const templates = pgTable("templates", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
-  subtitle: jsonb("subtitle"),
+  subtitle: text("subtitle"),
   description: text("description"),
   isFeatured: boolean("is_featured").default(false).notNull(),
   category: text("category"),

@@ -1,0 +1,1 @@
+ALTER TABLE "templates" ALTER COLUMN "subtitle" SET DATA TYPE text;
