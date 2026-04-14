@@ -1,9 +1,14 @@
-import { NextResponse } from "next/server";
-import { getAllTemplates } from "@/app/(admin)/templates/action";
+import { getTemplates } from "@/app/(admin)/templates/action";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const response = await getAllTemplates();
+    // 1. Check for the 'featured' query param
+    const { searchParams } = new URL(req.url);
+    const isFeatured = searchParams.get("featured") === "true";
+
+    // 2. Call the unified function
+    const response = await getTemplates(isFeatured);
 
     if (!response.success) {
       return NextResponse.json(
@@ -13,20 +18,12 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      {
-        success: true,
-        data: response.data,
-      },
+      { success: true, data: response.data },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Templates API Error:", error);
-
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Internal Server Error",
-      },
+      { success: false, error: error.message || "Internal Server Error" },
       { status: 500 }
     );
   }

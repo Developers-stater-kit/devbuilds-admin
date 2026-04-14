@@ -2,20 +2,20 @@
 
 import { db } from "@/db/drizzle";
 import { templates } from "@/db/schema/templates/templates";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
-export interface GetAllTemplatesResponse {
+export interface GetTemplatesResponse {
     success: boolean;
     data: typeof templates.$inferSelect[] | null;
     error?: string;
 }
 
-export const getAllTemplates = async (): Promise<GetAllTemplatesResponse> => {
+export const getAllTemplates = async (): Promise<GetTemplatesResponse> => {
     try {
         const data = await db
             .select()
             .from(templates)
-            .where(eq(templates.isActive, true));
+            // .where(eq(templates.isActive, true));
 
         return {
             success: true,
@@ -30,6 +30,36 @@ export const getAllTemplates = async (): Promise<GetAllTemplatesResponse> => {
         };
     }
 };
+
+
+export const getTemplates = async (onlyFeatured: boolean = false): Promise<GetTemplatesResponse> => {
+    try {
+        // Always filter by isActive for the user-facing platform
+        const filters = [eq(templates.isActive, true)];
+
+        // If onlyFeatured is true, add that filter to the list
+        if (onlyFeatured) {
+            filters.push(eq(templates.isFeatured, true));
+        }
+
+        const data = await db
+            .select()
+            .from(templates)
+            .where(and(...filters));
+
+        return {
+            success: true,
+            data,
+        };
+    } catch (error) {
+        console.error("Error fetching templates:", error);
+        return {
+            success: false,
+            data: [],
+            error: "Failed to fetch templates",
+        };
+    }
+}
 
 type Response = {
     success: boolean;
