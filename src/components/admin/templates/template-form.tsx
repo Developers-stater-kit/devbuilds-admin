@@ -3,12 +3,14 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
     Globe,
@@ -21,6 +23,8 @@ import {
     Loader2,
     Star,
     DollarSign,
+    Activity,
+    Type,
 } from "lucide-react";
 import { templates } from "@/db/schema/templates/templates";
 import { createTemplate, updateTemplate } from "@/app/(admin)/templates/action";
@@ -31,10 +35,8 @@ export type Template = typeof templates.$inferSelect;
 
 const templateSchema = z.object({
     title: z.string().min(1, "Title is required"),
-    slug: z.string().min(1, "Slug is required").regex(
-        /^[a-z0-9-]+$/,
-        "Slug can only contain lowercase letters, numbers, and hyphens"
-    ),
+    slug: z.string().min(1, "Slug is required"),
+    subtitle: z.string().optional(),
     description: z.string().min(1, "Description is required"),
     category: z.string().optional(),
     thumbnail: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
@@ -43,12 +45,11 @@ const templateSchema = z.object({
     cliCommand: z.string().optional(),
     pricingType: z.enum(["FREE", "PAID"]),
     isFeatured: z.boolean(),
+    isActive: z.boolean(),
     authorName: z.string().optional(),
 });
 
 type TemplateFormValues = z.infer<typeof templateSchema>;
-
-// ─── TYPES ────────────────────────────────────────────────────────────────────
 
 type TemplateFormProps = {
     initialData?: Template | null;
@@ -92,9 +93,7 @@ function FormField({
                 {required && <span className="text-destructive">*</span>}
             </Label>
             {children}
-            {error && (
-                <p className="text-xs text-destructive">{error}</p>
-            )}
+            {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
     );
 }
@@ -102,50 +101,60 @@ function FormField({
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormProps) {
-
     const form = useForm<TemplateFormValues>({
         resolver: zodResolver(templateSchema),
         defaultValues: {
             title: initialData?.title || "",
             slug: initialData?.slug || "",
+            subtitle: initialData?.subtitle || "",
             description: initialData?.description || "",
             category: initialData?.category || "",
             thumbnail: initialData?.thumbnail || "",
             previewUrl: initialData?.previewUrl || "",
             githubUrl: initialData?.githubUrl || "",
             cliCommand: initialData?.cliCommand || "",
-            pricingType: initialData?.pricingType || "FREE",
+            pricingType: (initialData?.pricingType as "FREE" | "PAID") || "FREE",
             isFeatured: initialData?.isFeatured || false,
+            isActive: initialData?.isActive ?? true,
             authorName: initialData?.authorName || "",
         },
     });
 
-    const { handleSubmit, control, watch, formState: { errors, isSubmitting } } = form;
+    const { handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = form;
 
     const pricingType = watch("pricingType");
     const isFeatured = watch("isFeatured");
+    const watchedTitle = watch("title");
+
+    // Automatic Slug Generation Logic
+    useEffect(() => {
+        if (!initialData && watchedTitle) {
+            const baseSlug = watchedTitle
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
+            
+            // Append short random string for uniqueness
+            const uniqueId = Math.random().toString(36).substring(2, 6);
+            setValue("slug", `${baseSlug}-${uniqueId}`);
+        }
+    }, [watchedTitle, setValue, initialData]);
 
     const onSubmit = async (values: TemplateFormValues) => {
-        // Define the server action execution
         const actionCall = async () => {
             let res;
-
             if (initialData?.id) {
-                // Update existing template
                 res = await updateTemplate(initialData.id, values);
             } else {
-                // Create new template (matching your 'data' wrapper pattern)
                 res = await createTemplate({ data: values });
             }
 
             if (!res.success) {
                 throw new Error(res.mssg || "An error occurred while saving.");
             }
-
             return res;
         };
 
-        // Use toast to handle the loading, success, and error states
         toast.promise(actionCall(), {
             loading: `${initialData ? "Updating" : "Creating"} template...`,
             success: () => {
@@ -155,12 +164,11 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
             error: (err) => err.message,
         });
     };
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
-
-            {/* ── Scrollable body ── */}
             <div className="flex-1 overflow-y-auto space-y-8 px-6 py-6">
-
+                
                 {/* Basic Info */}
                 <FormSection title="Basic Info">
                     <div className="grid grid-cols-2 gap-4">
@@ -169,7 +177,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                             control={control}
                             render={({ field }) => (
                                 <FormField id="title" label="Title" icon={FileText} required error={errors.title?.message}>
-                                    <Input {...field} id="title" placeholder="e.g. Acme SaaS Landing" />
+                                    <Input {...field} placeholder="e.g. Acme SaaS Landing" />
                                 </FormField>
                             )}
                         />
@@ -177,13 +185,11 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                             name="slug"
                             control={control}
                             render={({ field }) => (
-                                <FormField id="slug" label="Slug" icon={Link} required error={errors.slug?.message}>
-                                    <Input
-                                        {...field}
-                                        id="slug"
-                                        placeholder="e.g. acme-saas"
-                                        disabled={!!initialData}
-                                        className={initialData ? "opacity-50 cursor-not-allowed" : ""}
+                                <FormField id="slug" label="Slug (Auto-generated)" icon={Link} required error={errors.slug?.message}>
+                                    <Input 
+                                        {...field} 
+                                        disabled 
+                                        className="bg-muted font-mono text-xs opacity-80" 
                                     />
                                 </FormField>
                             )}
@@ -191,11 +197,21 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                     </div>
 
                     <Controller
+                        name="subtitle"
+                        control={control}
+                        render={({ field }) => (
+                            <FormField id="subtitle" label="Subtitle" icon={Type} error={errors.subtitle?.message}>
+                                <Input {...field} placeholder="A catchy one-liner for the template" />
+                            </FormField>
+                        )}
+                    />
+
+                    <Controller
                         name="description"
                         control={control}
                         render={({ field }) => (
                             <FormField id="description" label="Short Description" icon={FileText} required error={errors.description?.message}>
-                                <Input {...field} id="description" placeholder="A short tagline shown in listings and the CLI" />
+                                <Input {...field} placeholder="A short tagline shown in listings" />
                             </FormField>
                         )}
                     />
@@ -206,7 +222,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                             control={control}
                             render={({ field }) => (
                                 <FormField id="category" label="Category" icon={Tag} error={errors.category?.message}>
-                                    <Input {...field} id="category" placeholder="e.g. SaaS, Portfolio" />
+                                    <Input {...field} placeholder="e.g. SaaS, Portfolio" />
                                 </FormField>
                             )}
                         />
@@ -215,7 +231,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                             control={control}
                             render={({ field }) => (
                                 <FormField id="authorName" label="Author Name" icon={User} error={errors.authorName?.message}>
-                                    <Input {...field} id="authorName" placeholder="e.g. DevBuilds Team" />
+                                    <Input {...field} placeholder="e.g. DevBuilds Team" />
                                 </FormField>
                             )}
                         />
@@ -231,7 +247,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                         control={control}
                         render={({ field }) => (
                             <FormField id="thumbnail" label="Thumbnail Cover URL" icon={Image} error={errors.thumbnail?.message}>
-                                <Input {...field} id="thumbnail" type="url" placeholder="https://..." />
+                                <Input {...field} type="url" placeholder="https://..." />
                             </FormField>
                         )}
                     />
@@ -240,7 +256,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                         control={control}
                         render={({ field }) => (
                             <FormField id="previewUrl" label="Live Preview URL" icon={Globe} error={errors.previewUrl?.message}>
-                                <Input {...field} id="previewUrl" type="url" placeholder="https://..." />
+                                <Input {...field} type="url" placeholder="https://..." />
                             </FormField>
                         )}
                     />
@@ -249,7 +265,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                         control={control}
                         render={({ field }) => (
                             <FormField id="githubUrl" label="GitHub Repository URL" icon={Terminal} error={errors.githubUrl?.message}>
-                                <Input {...field} id="githubUrl" type="url" placeholder="https://github.com/..." />
+                                <Input {...field} type="url" placeholder="https://github.com/..." />
                             </FormField>
                         )}
                     />
@@ -260,8 +276,7 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                             <FormField id="cliCommand" label="CLI Install Command" icon={Terminal} error={errors.cliCommand?.message}>
                                 <Input
                                     {...field}
-                                    id="cliCommand"
-                                    placeholder="dvkit templates saas-landing"
+                                    placeholder="devkit templates saas-landing"
                                     className="font-mono text-sm"
                                 />
                             </FormField>
@@ -274,7 +289,32 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                 {/* Settings */}
                 <FormSection title="Settings">
                     <div className="flex flex-col gap-4">
+                        
+                        {/* Active Switch */}
+                        <Controller
+                            name="isActive"
+                            control={control}
+                            render={({ field }) => (
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="flex flex-col gap-1">
+                                        <Label htmlFor="isActive" className="flex items-center gap-2 font-medium">
+                                            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                                            Active Status
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Only active templates are visible on the storefront.
+                                        </p>
+                                    </div>
+                                    <Switch 
+                                        id="isActive" 
+                                        checked={field.value} 
+                                        onCheckedChange={field.onChange} 
+                                    />
+                                </div>
+                            )}
+                        />
 
+                        {/* Mark as Premium */}
                         <Controller
                             name="pricingType"
                             control={control}
@@ -297,13 +337,14 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                                             </Badge>
                                         </Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Paid templates show a redirect prompt in the CLI instead of cloning.
+                                            Premium templates require a purchase before cloning.
                                         </p>
                                     </div>
                                 </div>
                             )}
                         />
 
+                        {/* Feature Toggle */}
                         <Controller
                             name="isFeatured"
                             control={control}
@@ -324,19 +365,17 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                                             )}
                                         </Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Featured templates appear in the CLI's curated list shown to users.
+                                            Featured templates appear in the curated list.
                                         </p>
                                     </div>
                                 </div>
                             )}
                         />
-
                     </div>
                 </FormSection>
-
             </div>
 
-            {/* ── Sticky footer ── */}
+            {/* Sticky footer */}
             <div className="border-t px-6 py-4 flex items-center justify-end gap-2 bg-background">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                     Cancel
@@ -346,7 +385,6 @@ export function TemplateForm({ initialData, onSuccess, onCancel }: TemplateFormP
                     {isSubmitting ? "Saving..." : initialData ? "Update Template" : "Create Template"}
                 </Button>
             </div>
-
         </form>
     );
 }

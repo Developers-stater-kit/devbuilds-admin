@@ -17,6 +17,7 @@ export const templates = pgTable("templates", {
   cliCommand: text("cli_command"),
   pricingType: pricingTypeEnum("pricing_type").default('FREE').notNull(),
   authorName: text("author_name"),
+  isActive: boolean("is_active").default(false).notNull(),
   authorAvatar: text("author_avatar").array(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

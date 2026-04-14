@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MoreHorizontal, Plus, Pencil, Trash, ExternalLink } from "lucide-react";
+import { MoreHorizontal, Plus, Pencil, Trash, ExternalLink, Activity } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +57,7 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
   const router = useRouter();
   const data = initialData;
   const [pricingFilter, setPricingFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,10 +99,18 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
 
   const filteredData = data.filter((item) => {
     const matchPricing = pricingFilter === "ALL" || item.pricingType === pricingFilter;
+    
+    const matchStatus = 
+      statusFilter === "ALL" || 
+      (statusFilter === "ACTIVE" && item.isActive) || 
+      (statusFilter === "DRAFT" && !item.isActive);
+
     const matchSearch =
       item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.slug.toLowerCase().includes(search.toLowerCase());
-    return matchPricing && matchSearch;
+      item.slug.toLowerCase().includes(search.toLowerCase()) ||
+      (item.subtitle?.toLowerCase() || "").includes(search.toLowerCase());
+
+    return matchPricing && matchStatus && matchSearch;
   });
 
   return (
@@ -111,11 +120,12 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <Input
-            placeholder="Search templates..."
+            placeholder="Search title, slug or subtitle..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full md:w-[250px]"
           />
+          
           <Select value={pricingFilter} onValueChange={setPricingFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Pricing Type" />
@@ -126,7 +136,19 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
               <SelectItem value="PAID">PREMIUM</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Status</SelectItem>
+              <SelectItem value="ACTIVE">Active (Live)</SelectItem>
+              <SelectItem value="DRAFT">Draft</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
         <Button onClick={openCreate} className="h-10">
           <Plus className="mr-2 h-4 w-4" />
           New Template
@@ -134,7 +156,7 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
       </div>
 
       {/* ── Table ── */}
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card text-card-foreground">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,11 +176,24 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
               </TableRow>
             ) : (
               filteredData.map((template) => (
-                <TableRow key={template.slug}>
+                <TableRow key={template.id}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-foreground">{template.title}</span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[250px]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{template.title}</span>
+                        <Badge 
+                          variant={template.isActive ? "default" : "outline"} 
+                          className={template.isActive 
+                            ? "bg-emerald-500 hover:bg-emerald-600 border-transparent text-white text-[10px] h-4 px-1.5" 
+                            : "text-[10px] h-4 px-1.5 text-muted-foreground"
+                          }
+                        >
+                          {template.isActive ? "Live" : "Draft"}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground truncate max-w-[280px]">
+                        {template.subtitle && <span className="italic font-medium text-foreground/60">"{template.subtitle}"</span>}
+                        {template.subtitle && " • "}
                         {template.slug} • {template.authorName}
                       </span>
                     </div>
@@ -177,7 +212,9 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
                   <TableCell>
                     <div className="flex flex-col gap-1 text-xs">
                       {template.isFeatured && (
-                        <span className="font-semibold text-emerald-600">Featured</span>
+                        <span className="font-semibold text-emerald-600 flex items-center gap-1">
+                          Featured
+                        </span>
                       )}
                       {template.previewUrl && (
                         <a
@@ -195,7 +232,6 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -257,8 +293,7 @@ export function TemplatesTable({ initialData = [] }: { initialData: Template[] }
             <AlertDialogTitle>Delete Template?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure? This will remove{" "}
-              <span className="font-semibold">{templateToDelete?.title}</span> immediately
-              and users can no longer find it.
+              <span className="font-semibold">{templateToDelete?.title}</span> immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
