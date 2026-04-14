@@ -5,27 +5,30 @@ import { templates } from "@/db/schema/templates/templates";
 import { eq } from "drizzle-orm";
 
 export interface GetAllTemplatesResponse {
-  success: boolean;
-  data: typeof templates.$inferSelect[] | null;
-  error?: string;
+    success: boolean;
+    data: typeof templates.$inferSelect[] | null;
+    error?: string;
 }
 
 export const getAllTemplates = async (): Promise<GetAllTemplatesResponse> => {
-  try {
-    const data = await db.select().from(templates);
+    try {
+        const data = await db
+            .select()
+            .from(templates)
+            .where(eq(templates.isActive, true));
 
-    return {
-      success: true,
-      data,
-    };
-  } catch (error) {
-    console.error("Error fetching templates:", error);
-    return {
-      success: false,
-      data: null,
-      error: "Failed to fetch templates",
-    };
-  }
+        return {
+            success: true,
+            data,
+        };
+    } catch (error) {
+        console.error("Error fetching templates:", error);
+        return {
+            success: false,
+            data: null,
+            error: "Failed to fetch templates",
+        };
+    }
 };
 
 type Response = {
